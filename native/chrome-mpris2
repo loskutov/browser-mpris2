@@ -4,6 +4,8 @@ import json
 import struct
 import sys
 from collections import defaultdict
+from typing import Dict, Tuple, List
+
 
 from gi.repository import Gio, GLib
 
@@ -79,8 +81,8 @@ class DBusService:
         node_info = Gio.DBusNodeInfo.new_for_xml(self.__doc__)
         for iface in node_info.interfaces:
             self._methods[iface.name] = {
-                meth.name: (tuple(a.signature for a in meth.out_args),
-                            tuple(a.signature for a in meth.in_args))
+                meth.name: (tuple(a.signature for a in meth.in_args),
+                            tuple(a.signature for a in meth.out_args))
                 for meth in iface.methods
             }
 
@@ -157,7 +159,7 @@ class DBusService:
         invocation.return_value(None)
 
     # SIGNALS
-    def PropertiesChanged(self, iface_name, changed_props, invalidated_props):
+    def PropertiesChanged(self, iface_name: str, changed_props, invalidated_props):
         # we assume readable properties
         changed_props = {
             p: GLib.Variant(self._properties[iface_name][p], v)
@@ -263,6 +265,7 @@ class MediaPlayer2(DBusService):
             "audio/x-flac",
             # TODO: add more
         ]
+        self.HasTrackList = True
 
         self.LoopStatus = "None"
         self.Metadata = {}
@@ -386,8 +389,11 @@ class MediaPlayer2(DBusService):
                 self.Metadata[key] = GLib.Variant("as", val)
                 changes.add("Metadata")
             elif key.startswith(("mpris:", "xesam:")):
-                self.Metadata[key] = GLib.Variant("s", val)
-                changes.add("Metadata")
+                if val:
+                    self.Metadata[key] = GLib.Variant("s", val)
+                    changes.add("Metadata")
+                else:
+                    self.Metadata.pop(key, None)
 
             elif key == "position":
                 pass
@@ -440,6 +446,58 @@ class Youtube(MediaPlayer2):
         self.LoopStatus = "None"
 
 
+class Vk(MediaPlayer2):
+    # FIXME:
+    __doc__ = MediaPlayer2.__doc__
+
+    def __init__(self, conn, tabid, name):
+        super().__init__(conn, tabid, name)
+
+        self.Identity = "VK"
+
+        self.CanControl = True
+        self.CanPlay = True
+        self.CanPause = True
+        self.CanSeek = True
+        self.CanSetFullscreen = False
+
+        self.MinimumRate = 1
+        self.MaximumRate = 1
+
+        # these are set correctly on song change
+        self.CanGoNext = False
+        self.CanGoPrevious = False
+
+        self.Shuffle = False
+        self.LoopStatus = "None"
+
+
+class Yamusic(MediaPlayer2):
+    # FIXME:
+    __doc__ = MediaPlayer2.__doc__
+
+    def __init__(self, conn, tabid, name):
+        super().__init__(conn, tabid, name)
+
+        self.Identity = "Yandex.Music"
+
+        self.CanControl = True
+        self.CanPlay = True
+        self.CanPause = True
+        self.CanSeek = True
+        self.CanSetFullscreen = False
+
+        self.MinimumRate = 1
+        self.MaximumRate = 1
+
+        # these are set correctly on song change
+        self.CanGoNext = False
+        self.CanGoPrevious = False
+
+        self.Shuffle = False
+        self.LoopStatus = "None"
+
+
 def main():
     mainloop = GLib.MainLoop()
 
@@ -480,7 +538,12 @@ def main():
                 # unique names
                 name += ".tab%d" % tabid
 
-            player = Youtube(conn, tabid, name)
+            if msg["source"] == "VK":
+                player = Vk(conn, tabid, name)
+            elif msg["source"] == "yamusic":
+                player = Yamusic(conn, tabid, name)
+            else:
+                player = Youtube(conn, tabid, name)
             players[tabid] = player
 
         if msg["type"] == "update":

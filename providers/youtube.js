@@ -17,7 +17,7 @@ class EventObserver {
     constructor(element, event, handler) {
         this.element = element;
         this.event = event;
-        this.handler = handler
+        this.handler = handler;
 
         element.addEventListener(event, this.handler);
     }
@@ -229,7 +229,7 @@ const COMMANDS = {
             break;
         }
     }
-}
+};
 
 function setPlaylistLoop(yes) {
     if (playlist.length && ((yes && !playlist.loop) || (!yes && playlist.loop)))
@@ -278,6 +278,7 @@ port.onMessage.addListener(({ cmd, data }) => {
 });
 
 function update(change) {
+    console.log("update", change);
     port.postMessage({
         source: "youtube", type: "update", data: change,
     });

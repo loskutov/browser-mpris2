@@ -19,10 +19,31 @@
       "matches": ["*://*.hooktube.com/*", "*://hooktube.com/*"],
       "js": ["providers/hooktube.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.vk.com/*", "*://vk.com/*"],
+      "js": ["jquery.min.js", "providers/common-constants.js", "providers/vk.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://music.yandex.ru/*"],
+      "js": ["jquery.min.js", "providers/common-constants.js", "providers/yandexmusic.js"]
     }
+  ],
+
+  "web_accessible_resources": [
+    "providers/injected-common.js",
+    "providers/common-constants.js",
+    "providers/common-constants-module.js",
+    "providers/vk-injected.js",
+    "providers/yandexmusic-injected.js"
   ],
 
   "permissions": [
     "nativeMessaging"
-  ]
+  ],
+
+  "externally_connectable": {
+    "matches": ["*://vk.com/*", "*://music.yandex.ru/*"]
+  }
 }
